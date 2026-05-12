@@ -150,21 +150,31 @@ const COUNTRY_DATA = {
   "UA":  { name: "Ukraine",              currency: "UAH", rate: 15.50, yield10y: null, sectors: ["Agribusiness", "Steel", "Energy"],                         index: { name: "PFTS",        symbol: "PFTS" } }
 };
 
-// Merge any scraped overrides (from data.js) into the curated defaults.
-if (window.MACRO_OVERRIDE && window.MACRO_OVERRIDE.data) {
+// Merge scraped overrides into the curated defaults. On the live site we try
+// data.json with no-store (bypassing the 10-min Pages cache). For file:// users
+// where fetch() is blocked, we fall back to whatever the <script src="data.js">
+// tag already set on window.MACRO_OVERRIDE.
+function applyOverride() {
+  if (!window.MACRO_OVERRIDE || !window.MACRO_OVERRIDE.data) return;
   for (const [iso, vals] of Object.entries(window.MACRO_OVERRIDE.data)) {
-    if (COUNTRY_DATA[iso]) {
-      if (typeof vals.rate === "number")     COUNTRY_DATA[iso].rate = vals.rate;
-      if (typeof vals.yield10y === "number") COUNTRY_DATA[iso].yield10y = vals.yield10y;
-      if (typeof vals.ytd === "number")      COUNTRY_DATA[iso].ytd = vals.ytd;
-      if (vals.commodity && typeof vals.commodity === "object") COUNTRY_DATA[iso].commodity = vals.commodity;
-    }
+    if (!COUNTRY_DATA[iso]) continue;
+    if (typeof vals.rate === "number")     COUNTRY_DATA[iso].rate = vals.rate;
+    if (typeof vals.yield10y === "number") COUNTRY_DATA[iso].yield10y = vals.yield10y;
+    if (typeof vals.ytd === "number")      COUNTRY_DATA[iso].ytd = vals.ytd;
+    if (vals.commodity && typeof vals.commodity === "object") COUNTRY_DATA[iso].commodity = vals.commodity;
   }
   const dateEl = document.getElementById("data-date");
   if (dateEl && window.MACRO_OVERRIDE.updated) {
     dateEl.textContent = `live as of ${window.MACRO_OVERRIDE.updated}`;
   }
 }
+
+// Kick off a fresh fetch immediately; apply when ready.
+const dataReady = fetch("data.json", { cache: "no-store" })
+  .then(r => r.ok ? r.json() : null)
+  .then(json => { if (json) window.MACRO_OVERRIDE = json; })
+  .catch(() => {})
+  .finally(() => { applyOverride(); });
 
 const ISO3_TO_ISO2 = {
   USA:"US", CHN:"CN", JPN:"JP", DEU:"DE", GBR:"GB", FRA:"FR", ITA:"IT", ESP:"ES", NLD:"NL", CHE:"CH",
@@ -601,9 +611,11 @@ function onEachFeature(feature, layer) {
 
 renderEmpty();
 
-fetch("https://cdn.jsdelivr.net/gh/johan/world.geo.json/countries.geo.json")
-  .then(r => r.json())
-  .then(geo => {
+Promise.all([
+  dataReady,
+  fetch("https://cdn.jsdelivr.net/gh/johan/world.geo.json/countries.geo.json").then(r => r.json())
+])
+  .then(([_, geo]) => {
     L.geoJSON(geo, {
       style: (f) => getCountryKey(f) ? supportedStyle() : unsupportedStyle(),
       onEachFeature
