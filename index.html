@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>World Macro & News Map</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="preconnect" href="https://api.gdeltproject.org" crossorigin />
+<link rel="preconnect" href="https://api.frankfurter.dev" crossorigin />
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1f2630;
+    --border: #2a313c;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --good: #3fb950;
+    --bad: #f85149;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  #app { display: grid; grid-template-columns: 1fr 460px; height: 100vh; }
+  #map { width: 100%; height: 100%; background: #0a0d12; }
+  #panel { background: var(--panel); border-left: 1px solid var(--border); overflow-y: auto; padding: 20px; }
+  h1 { font-size: 16px; margin: 0 0 4px; font-weight: 600; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
+  h2 { font-size: 24px; margin: 0 0 16px; font-weight: 700; }
+  h3 { font-size: 12px; margin: 20px 0 8px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600; }
+  .empty { color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .metric { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .metric-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .metric-value { font-size: 18px; font-weight: 600; margin-top: 4px; }
+  .metric-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .spark { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 8px; }
+  .spark-header { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .spark svg { display: block; width: 100%; height: 50px; }
+  .sectors { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sector-tag { background: var(--panel-2); border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; font-size: 12px; }
+  .index-row { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
+  .index-row a { color: var(--accent); text-decoration: none; font-size: 13px; }
+  .index-name { display: flex; align-items: baseline; gap: 8px; }
+  .ytd-badge { font-size: 12px; font-weight: 600; }
+  .ytd-up { color: var(--good); }
+  .ytd-down { color: var(--bad); }
+  .tabs { display: flex; gap: 4px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .tab { background: none; border: none; color: var(--muted); padding: 8px 12px; font-size: 13px; cursor: pointer; border-bottom: 2px solid transparent; font-family: inherit; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .articles { display: flex; flex-direction: column; gap: 8px; }
+  .article { display: flex; gap: 10px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-decoration: none; color: var(--text); transition: background 0.15s; }
+  .article:hover { background: #232a35; }
+  .article-thumb { width: 64px; height: 64px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: #2a313c; }
+  .article-thumb-placeholder { width: 64px; height: 64px; border-radius: 6px; flex-shrink: 0; background: #2a313c; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 20px; }
+  .article-body { flex: 1; min-width: 0; }
+  .article-title { font-size: 13px; line-height: 1.35; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .article-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .footnote { font-size: 11px; color: var(--muted); margin-top: 24px; line-height: 1.5; border-top: 1px solid var(--border); padding-top: 12px; }
+  .loading { color: var(--muted); font-size: 13px; }
+  .leaflet-container { background: #0a0d12; }
+  .leaflet-tooltip.country-tip { background: #161b22; border: 1px solid #2a313c; color: #e6edf3; font-size: 12px; padding: 8px 10px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+  .leaflet-tooltip.country-tip::before { display: none; }
+  .country-tip .tip-name { font-weight: 600; margin-bottom: 4px; }
+  .country-tip .tip-row { color: #8b949e; font-size: 11px; }
+  .country-tip .tip-row b { color: #e6edf3; font-weight: 500; }
+  .country-tip .tip-hint { color: #58a6ff; font-size: 11px; margin-top: 4px; font-style: italic; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="map"></div>
+  <aside id="panel">
+    <h1>World Macro & News</h1>
+    <h2 id="country-name">Click a country</h2>
+    <div id="content"></div>
+    <div class="footnote">
+      FX: <a href="https://www.frankfurter.app/" target="_blank" rel="noopener" style="color: var(--accent);">frankfurter.app</a> (live, ECB).
+      News: <a href="https://www.gdeltproject.org/" target="_blank" rel="noopener" style="color: var(--accent);">GDELT 2.0</a> Doc API (last 7 days).
+      Policy rate / 10Y yield / YTD: <span id="data-date">curated (2026-05)</span>. Sectors / index: curated. YTD from Yahoo Finance.
+    </div>
+  </aside>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="data.js" onerror="window.MACRO_OVERRIDE=null"></script>
+<script>
+// ---------- Curated country data ----------
+const COUNTRY_DATA = {
+  "US":  { name: "United States",       currency: "USD", rate: 4.25, yield10y: 4.30, sectors: ["Technology", "Healthcare", "Financials", "Consumer Disc."], index: { name: "S&P 500",      symbol: ".INX"   } },
+  "CN":  { name: "China",                currency: "CNY", rate: 3.10, yield10y: 1.70, sectors: ["Industrials", "Tech", "Financials", "Consumer Staples"],    index: { name: "CSI 300",     symbol: "000300:SHE" } },
+  "JP":  { name: "Japan",                currency: "JPY", rate: 0.50, yield10y: 1.45, sectors: ["Automotive", "Industrials", "Tech Hardware", "Financials"], index: { name: "Nikkei 225",  symbol: "NI225:INDEXNIKKEI" } },
+  "DE":  { name: "Germany",              currency: "EUR", rate: 2.50, yield10y: 2.50, sectors: ["Automotive", "Industrials", "Chemicals", "Financials"],     index: { name: "DAX",         symbol: "DAX:INDEXDB" } },
+  "GB":  { name: "United Kingdom",       currency: "GBP", rate: 4.25, yield10y: 4.50, sectors: ["Financials", "Energy", "Consumer Staples", "Healthcare"],   index: { name: "FTSE 100",    symbol: "UKX:INDEXFTSE" } },
+  "FR":  { name: "France",               currency: "EUR", rate: 2.50, yield10y: 3.20, sectors: ["Luxury Goods", "Industrials", "Energy", "Financials"],      index: { name: "CAC 40",      symbol: "PX1:INDEXEURO" } },
+  "IT":  { name: "Italy",                currency: "EUR", rate: 2.50, yield10y: 3.80, sectors: ["Financials", "Industrials", "Energy", "Consumer"],          index: { name: "FTSE MIB",    symbol: "FTSEMIB:INDEXFTSE" } },
+  "ES":  { name: "Spain",                currency: "EUR", rate: 2.50, yield10y: 3.15, sectors: ["Financials", "Utilities", "Industrials", "Tourism"],        index: { name: "IBEX 35",     symbol: "IBEX:INDEXBME" } },
+  "NL":  { name: "Netherlands",          currency: "EUR", rate: 2.50, yield10y: 2.80, sectors: ["Semiconductors", "Energy", "Financials", "Consumer"],       index: { name: "AEX",         symbol: "AEX:INDEXEURO" } },
+  "CH":  { name: "Switzerland",          currency: "CHF", rate: 0.50, yield10y: 0.45, sectors: ["Pharma", "Financials", "Luxury Goods", "Industrials"],      index: { name: "SMI",         symbol: "SMI:INDEXSWX" } },
+  "SE":  { name: "Sweden",               currency: "SEK", rate: 2.25, yield10y: 2.30, sectors: ["Industrials", "Tech", "Financials", "Mining"],              index: { name: "OMXS30",      symbol: "OMXS30:INDEXNASDAQ" } },
+  "NO":  { name: "Norway",               currency: "NOK", rate: 4.50, yield10y: 3.95, sectors: ["Energy", "Shipping", "Seafood", "Financials"],              index: { name: "OBX",         symbol: "OBX:INDEXOSL" } },
+  "DK":  { name: "Denmark",              currency: "DKK", rate: 2.10, yield10y: 2.55, sectors: ["Pharma", "Shipping", "Renewables", "Financials"],           index: { name: "OMXC25",      symbol: "OMXC25:INDEXNASDAQ" } },
+  "FI":  { name: "Finland",              currency: "EUR", rate: 2.50, yield10y: 2.95, sectors: ["Tech", "Forestry", "Industrials", "Financials"],            index: { name: "OMXH25",      symbol: "OMXH25:INDEXNASDAQ" } },
+  "IE":  { name: "Ireland",              currency: "EUR", rate: 2.50, yield10y: 2.70, sectors: ["Pharma", "Tech", "Financials", "Food"],                     index: { name: "ISEQ",        symbol: "ISEQ:INDEXEURO" } },
+  "PL":  { name: "Poland",               currency: "PLN", rate: 5.75, yield10y: 5.30, sectors: ["Financials", "Energy", "Retail", "Industrials"],            index: { name: "WIG20",       symbol: "WIG20:INDEXWAR" } },
+  "CA":  { name: "Canada",               currency: "CAD", rate: 2.75, yield10y: 3.20, sectors: ["Energy", "Financials", "Mining", "Tech"],                   index: { name: "S&P/TSX",     symbol: "OSPTX:INDEXTSI" } },
+  "MX":  { name: "Mexico",               currency: "MXN", rate: 9.00, yield10y: 9.40, sectors: ["Financials", "Telecom", "Consumer Staples", "Industrials"], index: { name: "S&P/BMV IPC", symbol: "MEXBOL:INDEXBMV" } },
+  "BR":  { name: "Brazil",               currency: "BRL", rate: 14.75, yield10y: 13.80, sectors: ["Mining", "Energy", "Financials", "Agribusiness"],         index: { name: "Bovespa",     symbol: "IBOV:INDEXBVMF" } },
+  "AR":  { name: "Argentina",            currency: "ARS", rate: 32.00, yield10y: null, sectors: ["Energy", "Agribusiness", "Financials"],                    index: { name: "MERVAL",      symbol: "MERV:INDEXBYMA" } },
+  "CL":  { name: "Chile",                currency: "CLP", rate: 4.75, yield10y: 5.85, sectors: ["Mining", "Financials", "Retail", "Utilities"],              index: { name: "IPSA",        symbol: "IPSA:INDEXBCS" } },
+  "CO":  { name: "Colombia",             currency: "COP", rate: 9.25, yield10y: 11.00, sectors: ["Energy", "Financials", "Industrials"],                     index: { name: "COLCAP",      symbol: "COLCAP:INDEXBVC" } },
+  "PE":  { name: "Peru",                 currency: "PEN", rate: 4.50, yield10y: 6.80, sectors: ["Mining", "Financials", "Consumer"],                         index: { name: "S&P/BVL Peru", symbol: "SPBLPGPT" } },
+  "RU":  { name: "Russia",               currency: "RUB", rate: 17.00, yield10y: 14.20, sectors: ["Energy", "Mining", "Financials"],                         index: { name: "MOEX",        symbol: "IMOEX" } },
+  "TR":  { name: "Turkey",               currency: "TRY", rate: 47.50, yield10y: 32.00, sectors: ["Financials", "Industrials", "Consumer", "Energy"],        index: { name: "BIST 100",    symbol: "XU100:INDEXIST" } },
+  "ZA":  { name: "South Africa",         currency: "ZAR", rate: 7.50, yield10y: 10.50, sectors: ["Mining", "Financials", "Telecom", "Retail"],               index: { name: "JSE Top 40",  symbol: "JTOPI:INDEXJSE" } },
+  "IN":  { name: "India",                currency: "INR", rate: 6.00, yield10y: 6.50, sectors: ["IT Services", "Financials", "Consumer", "Energy"],          index: { name: "NIFTY 50",    symbol: "NIFTY_50:INDEXNSE" } },
+  "ID":  { name: "Indonesia",            currency: "IDR", rate: 5.75, yield10y: 6.85, sectors: ["Financials", "Consumer Staples", "Mining", "Telecom"],      index: { name: "IDX Composite", symbol: "COMPOSITE:IDX" } },
+  "TH":  { name: "Thailand",             currency: "THB", rate: 1.75, yield10y: 2.45, sectors: ["Financials", "Energy", "Industrials", "Tourism"],           index: { name: "SET",         symbol: "SET:INDEXBKK" } },
+  "VN":  { name: "Vietnam",              currency: "VND", rate: 4.50, yield10y: 3.10, sectors: ["Financials", "Real Estate", "Industrials", "Consumer"],     index: { name: "VN-Index",    symbol: "VNINDEX" } },
+  "MY":  { name: "Malaysia",             currency: "MYR", rate: 3.00, yield10y: 3.70, sectors: ["Financials", "Tech", "Energy", "Plantations"],              index: { name: "KLCI",        symbol: "KLSE:INDEXKLSE" } },
+  "PH":  { name: "Philippines",          currency: "PHP", rate: 5.50, yield10y: 6.20, sectors: ["Financials", "Telecom", "Real Estate", "Consumer"],         index: { name: "PSEi",        symbol: "PSEI:INDEXPSE" } },
+  "SG":  { name: "Singapore",            currency: "SGD", rate: 2.85, yield10y: 2.60, sectors: ["Financials", "Real Estate", "Industrials", "Telecom"],      index: { name: "STI",         symbol: "STI:INDEXSGX" } },
+  "KR":  { name: "South Korea",          currency: "KRW", rate: 2.75, yield10y: 2.90, sectors: ["Semiconductors", "Automotive", "Industrials", "Financials"], index: { name: "KOSPI",      symbol: "KOSPI:KRX" } },
+  "TW":  { name: "Taiwan",               currency: "TWD", rate: 2.00, yield10y: 1.55, sectors: ["Semiconductors", "Tech Hardware", "Financials"],            index: { name: "TAIEX",       symbol: "TWII:INDEXTPE" } },
+  "HK":  { name: "Hong Kong",            currency: "HKD", rate: 4.75, yield10y: 4.15, sectors: ["Financials", "Real Estate", "Consumer", "Telecom"],         index: { name: "Hang Seng",   symbol: "HSI:INDEXHANGSENG" } },
+  "AU":  { name: "Australia",            currency: "AUD", rate: 3.85, yield10y: 4.25, sectors: ["Mining", "Financials", "Healthcare", "Energy"],             index: { name: "S&P/ASX 200", symbol: "XJO:INDEXASX" } },
+  "NZ":  { name: "New Zealand",          currency: "NZD", rate: 3.50, yield10y: 4.45, sectors: ["Financials", "Healthcare", "Agribusiness", "Utilities"],    index: { name: "NZX 50",      symbol: "NZ50G:INDEXNZE" } },
+  "AE":  { name: "United Arab Emirates", currency: "AED", rate: 4.40, yield10y: 4.50, sectors: ["Financials", "Real Estate", "Energy", "Telecom"],           index: { name: "ADX General", symbol: "ADI:INDEXADX" } },
+  "SA":  { name: "Saudi Arabia",         currency: "SAR", rate: 5.00, yield10y: 4.95, sectors: ["Energy", "Financials", "Materials", "Telecom"],             index: { name: "TASI",        symbol: "TASI:INDEXTAD" } },
+  "IL":  { name: "Israel",               currency: "ILS", rate: 4.50, yield10y: 4.60, sectors: ["Tech", "Financials", "Defense", "Pharma"],                  index: { name: "TA-35",       symbol: "TA35:INDEXTLV" } },
+  "EG":  { name: "Egypt",                currency: "EGP", rate: 24.00, yield10y: 22.50, sectors: ["Financials", "Real Estate", "Telecom", "Industrials"],    index: { name: "EGX 30",      symbol: "CASE:INDEXEGX" } },
+  "NG":  { name: "Nigeria",              currency: "NGN", rate: 27.50, yield10y: 19.20, sectors: ["Financials", "Energy", "Consumer Staples", "Telecom"],    index: { name: "NGX All-Share", symbol: "NGSEINDX" } },
+  "KE":  { name: "Kenya",                currency: "KES", rate: 9.75, yield10y: 13.50, sectors: ["Financials", "Telecom", "Agribusiness"],                   index: { name: "NSE 20",      symbol: "NSE20" } },
+  "PK":  { name: "Pakistan",             currency: "PKR", rate: 11.00, yield10y: 12.10, sectors: ["Financials", "Energy", "Industrials", "Consumer"],        index: { name: "KSE 100",     symbol: "KSE100:INDEXPSX" } },
+  "BD":  { name: "Bangladesh",           currency: "BDT", rate: 10.00, yield10y: 11.80, sectors: ["Textiles", "Financials", "Pharma"],                       index: { name: "DSE Broad",   symbol: "DSEX" } },
+  "AT":  { name: "Austria",              currency: "EUR", rate: 2.50, yield10y: 3.00, sectors: ["Industrials", "Financials", "Energy"],                      index: { name: "ATX",         symbol: "ATX:INDEXVIE" } },
+  "BE":  { name: "Belgium",              currency: "EUR", rate: 2.50, yield10y: 2.95, sectors: ["Financials", "Chemicals", "Pharma"],                        index: { name: "BEL 20",      symbol: "BEL20:INDEXEURO" } },
+  "PT":  { name: "Portugal",             currency: "EUR", rate: 2.50, yield10y: 2.85, sectors: ["Financials", "Utilities", "Retail"],                        index: { name: "PSI 20",      symbol: "PSI20:INDEXEURO" } },
+  "GR":  { name: "Greece",               currency: "EUR", rate: 2.50, yield10y: 3.40, sectors: ["Financials", "Energy", "Shipping"],                         index: { name: "ATHEX",       symbol: "GD:INDEXATHEX" } },
+  "CZ":  { name: "Czech Republic",       currency: "CZK", rate: 3.50, yield10y: 4.10, sectors: ["Industrials", "Financials", "Utilities"],                   index: { name: "PX",          symbol: "PX:INDEXPRA" } },
+  "HU":  { name: "Hungary",              currency: "HUF", rate: 6.25, yield10y: 6.80, sectors: ["Financials", "Energy", "Pharma"],                           index: { name: "BUX",         symbol: "BUX:INDEXBUD" } },
+  "RO":  { name: "Romania",              currency: "RON", rate: 6.50, yield10y: 7.30, sectors: ["Financials", "Energy", "Industrials"],                      index: { name: "BET",         symbol: "BET:INDEXBVB" } },
+  "UA":  { name: "Ukraine",              currency: "UAH", rate: 15.50, yield10y: null, sectors: ["Agribusiness", "Steel", "Energy"],                         index: { name: "PFTS",        symbol: "PFTS" } }
+};
+
+// Merge any scraped overrides (from data.js) into the curated defaults.
+if (window.MACRO_OVERRIDE && window.MACRO_OVERRIDE.data) {
+  for (const [iso, vals] of Object.entries(window.MACRO_OVERRIDE.data)) {
+    if (COUNTRY_DATA[iso]) {
+      if (typeof vals.rate === "number")     COUNTRY_DATA[iso].rate = vals.rate;
+      if (typeof vals.yield10y === "number") COUNTRY_DATA[iso].yield10y = vals.yield10y;
+      if (typeof vals.ytd === "number")      COUNTRY_DATA[iso].ytd = vals.ytd;
+    }
+  }
+  const dateEl = document.getElementById("data-date");
+  if (dateEl && window.MACRO_OVERRIDE.updated) {
+    dateEl.textContent = `live as of ${window.MACRO_OVERRIDE.updated}`;
+  }
+}
+
+const ISO3_TO_ISO2 = {
+  USA:"US", CHN:"CN", JPN:"JP", DEU:"DE", GBR:"GB", FRA:"FR", ITA:"IT", ESP:"ES", NLD:"NL", CHE:"CH",
+  SWE:"SE", NOR:"NO", DNK:"DK", FIN:"FI", IRL:"IE", POL:"PL", CAN:"CA", MEX:"MX", BRA:"BR", ARG:"AR",
+  CHL:"CL", COL:"CO", PER:"PE", RUS:"RU", TUR:"TR", ZAF:"ZA", IND:"IN", IDN:"ID", THA:"TH", VNM:"VN",
+  MYS:"MY", PHL:"PH", SGP:"SG", KOR:"KR", TWN:"TW", HKG:"HK", AUS:"AU", NZL:"NZ", ARE:"AE", SAU:"SA",
+  ISR:"IL", EGY:"EG", NGA:"NG", KEN:"KE", PAK:"PK", BGD:"BD", AUT:"AT", BEL:"BE", PRT:"PT", GRC:"GR",
+  CZE:"CZ", HUN:"HU", ROU:"RO", UKR:"UA"
+};
+
+// ---------- Safe DOM helpers ----------
+function el(tag, opts = {}, children = []) {
+  const node = document.createElement(tag);
+  if (opts.className) node.className = opts.className;
+  if (opts.text != null) node.textContent = String(opts.text);
+  if (opts.href) node.href = opts.href;
+  if (opts.target) node.target = opts.target;
+  if (opts.rel) node.rel = opts.rel;
+  if (opts.id) node.id = opts.id;
+  if (opts.src) node.src = opts.src;
+  if (opts.alt != null) node.alt = opts.alt;
+  if (opts.onerror) node.onerror = opts.onerror;
+  for (const child of children) {
+    if (child == null) continue;
+    node.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
+  }
+  return node;
+}
+function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+function flagEmoji(iso2) {
+  if (!iso2 || iso2.length !== 2 || !/^[A-Z]{2}$/.test(iso2)) return "";
+  const cp = iso2.split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65);
+  return String.fromCodePoint(...cp);
+}
+function fmt(v, suffix = "") { return v == null ? "—" : v.toFixed(2) + suffix; }
+
+function timeAgo(date) {
+  const diff = (Date.now() - date.getTime()) / 1000;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return Math.floor(diff / 60) + "m ago";
+  if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
+  return Math.floor(diff / 86400) + "d ago";
+}
+
+function parseGdeltDate(s) {
+  // Format: YYYYMMDDTHHMMSSZ
+  if (!s || s.length < 15) return null;
+  const y = s.slice(0,4), m = s.slice(4,6), d = s.slice(6,8),
+        hh = s.slice(9,11), mm = s.slice(11,13), ss = s.slice(13,15);
+  return new Date(`${y}-${m}-${d}T${hh}:${mm}:${ss}Z`);
+}
+
+// ---------- Caching ----------
+const cache = { fx: {}, fxSeries: {}, news: {}, newsInflight: {} };
+
+async function fetchFX(currency) {
+  if (currency === "USD") return { rate: 1.0, date: "" };
+  if (cache.fx[currency]) return cache.fx[currency];
+  try {
+    const r = await fetch(`https://api.frankfurter.dev/v1/latest?from=USD&to=${encodeURIComponent(currency)}`);
+    if (!r.ok) throw new Error("FX fetch failed");
+    const data = await r.json();
+    const result = { rate: data.rates[currency], date: data.date };
+    cache.fx[currency] = result;
+    return result;
+  } catch { return null; }
+}
+
+async function fetchFXSeries(currency, days = 90) {
+  if (currency === "USD") return null;
+  if (cache.fxSeries[currency]) return cache.fxSeries[currency];
+  try {
+    const end = new Date();
+    const start = new Date(end.getTime() - days * 86400000);
+    const fmtDate = (d) => d.toISOString().slice(0, 10);
+    const url = `https://api.frankfurter.dev/v1/${fmtDate(start)}..${fmtDate(end)}?from=USD&to=${encodeURIComponent(currency)}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("FX series fetch failed");
+    const data = await r.json();
+    const points = Object.entries(data.rates)
+      .map(([date, v]) => ({ date, value: v[currency] }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    cache.fxSeries[currency] = points;
+    return points;
+  } catch { return null; }
+}
+
+function fetchNews(query, key) {
+  if (cache.news[key]) return Promise.resolve(cache.news[key]);
+  if (cache.newsInflight[key]) return cache.newsInflight[key];
+  const promise = (async () => {
+    try {
+      const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(query)}&mode=ArtList&maxrecords=6&format=json&sort=hybridrel&timespan=7d`;
+      const r = await fetch(url);
+      if (!r.ok) return [];
+      const data = await r.json();
+      const arts = (data.articles || []).slice(0, 6);
+      cache.news[key] = arts;
+      return arts;
+    } catch { return []; }
+    finally { delete cache.newsInflight[key]; }
+  })();
+  cache.newsInflight[key] = promise;
+  return promise;
+}
+
+// ---------- Sparkline ----------
+function renderSparkline(points) {
+  if (!points || points.length < 2) return null;
+  const w = 420, h = 50, pad = 4;
+  const xs = points.map((_, i) => i);
+  const ys = points.map(p => p.value);
+  const xMin = 0, xMax = xs.length - 1;
+  const yMin = Math.min(...ys), yMax = Math.max(...ys);
+  const ySpan = (yMax - yMin) || 1;
+  const sx = (x) => pad + (x - xMin) / (xMax - xMin) * (w - 2 * pad);
+  const sy = (y) => h - pad - (y - yMin) / ySpan * (h - 2 * pad);
+  const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${sx(i).toFixed(1)},${sy(p.value).toFixed(1)}`).join(" ");
+  const last = points[points.length - 1].value;
+  const first = points[0].value;
+  const up = last >= first;
+  const color = up ? "#3fb950" : "#f85149";
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("preserveAspectRatio", "none");
+  const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  pathEl.setAttribute("d", path);
+  pathEl.setAttribute("fill", "none");
+  pathEl.setAttribute("stroke", color);
+  pathEl.setAttribute("stroke-width", "1.5");
+  pathEl.setAttribute("stroke-linejoin", "round");
+  pathEl.setAttribute("stroke-linecap", "round");
+  svg.appendChild(pathEl);
+
+  const pct = ((last - first) / first) * 100;
+  const wrap = el("div", { className: "spark" });
+  const header = el("div", { className: "spark-header" }, [
+    el("span", { text: `90-day USD/${points.length ? "" : ""}history` }),
+    el("span", { text: (up ? "+" : "") + pct.toFixed(2) + "%" })
+  ]);
+  header.lastChild.style.color = color;
+  wrap.appendChild(header);
+  wrap.appendChild(svg);
+  return wrap;
+}
+
+// ---------- Map setup ----------
+const map = L.map('map', {
+  center: [25, 10], zoom: 2, minZoom: 2, maxZoom: 6,
+  worldCopyJump: true, zoomControl: true, attributionControl: false
+});
+
+let selectedLayer = null;
+// Supported countries (in COUNTRY_DATA) get a lighter fill so they stand out.
+const unsupportedStyle = () => ({ fillColor: "#1f2630", weight: 0.5, color: "#0e1116", fillOpacity: 1 });
+const supportedStyle   = () => ({ fillColor: "#3a4150", weight: 0.5, color: "#0e1116", fillOpacity: 1 });
+const hoverStyle       = () => ({ fillColor: "#58a6ff", weight: 0.8, color: "#0e1116", fillOpacity: 0.55 });
+const selectedStyle    = () => ({ fillColor: "#58a6ff", weight: 1,   color: "#ffffff", fillOpacity: 0.85 });
+const restingStyle     = (layer) => layer._hasData ? supportedStyle() : unsupportedStyle();
+
+function getCountryKey(feature) {
+  const p = feature.properties || {};
+  const iso3 = feature.id || p.ISO_A3 || p.iso_a3 || p.ADM0_A3 || p.id || p.ISO3;
+  const iso2 = p.ISO_A2 || p.iso_a2;
+  if (iso2 && COUNTRY_DATA[iso2]) return iso2;
+  if (iso3 && ISO3_TO_ISO2[iso3]) return ISO3_TO_ISO2[iso3];
+  return null;
+}
+function getCountryName(feature) {
+  const p = feature.properties || {};
+  return p.ADMIN || p.name || p.NAME || p.NAME_LONG || "Unknown";
+}
+
+// ---------- Render helpers ----------
+function metricBox(label, value, sub, valueId) {
+  return el("div", { className: "metric" }, [
+    el("div", { className: "metric-label", text: label }),
+    el("div", { className: "metric-value", id: valueId, text: value }),
+    el("div", { className: "metric-sub", text: sub || "" })
+  ]);
+}
+
+function articleCard(article) {
+  const date = parseGdeltDate(article.seendate);
+  const card = el("a", { className: "article", href: article.url, target: "_blank", rel: "noopener" });
+
+  if (article.socialimage) {
+    const img = el("img", { className: "article-thumb", src: article.socialimage, alt: "" });
+    img.onerror = () => {
+      const placeholder = el("div", { className: "article-thumb-placeholder", text: "📰" });
+      img.replaceWith(placeholder);
+    };
+    card.appendChild(img);
+  } else {
+    card.appendChild(el("div", { className: "article-thumb-placeholder", text: "📰" }));
+  }
+
+  const body = el("div", { className: "article-body" }, [
+    el("div", { className: "article-title", text: article.title || "(no title)" }),
+    el("div", { className: "article-meta",
+      text: `${article.domain || "unknown source"}${date ? " · " + timeAgo(date) : ""}` })
+  ]);
+  card.appendChild(body);
+  return card;
+}
+
+function renderArticles(container, articles) {
+  clear(container);
+  if (!articles || articles.length === 0) {
+    container.appendChild(el("p", { className: "empty", text: "No recent articles found in the last 7 days." }));
+    return;
+  }
+  for (const a of articles) container.appendChild(articleCard(a));
+}
+
+function setCountryName(key, displayName) {
+  const nameEl = document.getElementById("country-name");
+  clear(nameEl);
+  const flag = flagEmoji(key);
+  nameEl.appendChild(document.createTextNode((flag ? flag + " " : "") + displayName));
+}
+
+function renderEmpty() {
+  const content = document.getElementById("content");
+  clear(content);
+  content.appendChild(el("p", { className: "empty",
+    text: "Hover any country to preview its key metrics, or click for the full snapshot. Lighter-shaded countries have macro data; darker ones show news only." }));
+}
+
+// ---------- Topic queries ----------
+function topicQueries(country) {
+  // GDELT requires multi-word phrases in quotes; parens are only allowed around OR'd terms.
+  const c = `"${country.replace(/"/g, "")}"`;
+  return {
+    geopolitics: `${c} AND (geopolitics OR diplomacy OR conflict OR sanctions OR election OR government) sourcelang:eng`,
+    business:    `${c} AND (economy OR business OR trade OR inflation OR GDP OR "central bank") sourcelang:eng`,
+    finance:     `${c} AND (stocks OR equities OR bonds OR currency OR "stock market" OR markets) sourcelang:eng`
+  };
+}
+
+// ---------- Main render ----------
+async function renderCountry(key, displayName) {
+  const content = document.getElementById("content");
+  clear(content);
+
+  const data = COUNTRY_DATA[key];
+  const country = data ? data.name : displayName;
+  setCountryName(key, country);
+
+  if (data) {
+    // Macro snapshot
+    content.appendChild(el("h3", { text: "Macro snapshot" }));
+    content.appendChild(el("div", { className: "metric-grid" }, [
+      metricBox(`USD / ${data.currency}`, "loading…", "", "fx-value"),
+      metricBox("Policy rate", fmt(data.rate, "%"), "Central bank target"),
+      metricBox("10Y bond yield", fmt(data.yield10y, "%"), "Sovereign benchmark"),
+      metricBox("Currency", data.currency, "ISO 4217")
+    ]));
+
+    // Sparkline placeholder
+    const sparkSlot = el("div", { id: "spark-slot" });
+    content.appendChild(sparkSlot);
+
+    // Sectors
+    content.appendChild(el("h3", { text: "Key equity sectors" }));
+    content.appendChild(el("div", { className: "sectors" },
+      data.sectors.map(s => el("span", { className: "sector-tag", text: s }))));
+
+    // Index
+    content.appendChild(el("h3", { text: "Benchmark index" }));
+    const indexUrl = `https://www.google.com/finance/quote/${encodeURIComponent(data.index.symbol)}`;
+    const nameSide = el("div", { className: "index-name" }, [el("span", { text: data.index.name })]);
+    if (typeof data.ytd === "number") {
+      const sign = data.ytd >= 0 ? "+" : "";
+      nameSide.appendChild(el("span", {
+        className: "ytd-badge " + (data.ytd >= 0 ? "ytd-up" : "ytd-down"),
+        text: `${sign}${data.ytd.toFixed(2)}% YTD`
+      }));
+    }
+    content.appendChild(el("div", { className: "index-row" }, [
+      nameSide,
+      el("a", { href: indexUrl, target: "_blank", rel: "noopener", text: "Google Finance →" })
+    ]));
+  }
+
+  // News section with tabs
+  content.appendChild(el("h3", { text: "Latest news" }));
+  const tabsBar = el("div", { className: "tabs" });
+  const topics = [
+    { id: "geopolitics", label: "Geopolitics" },
+    { id: "business",    label: "Business" },
+    { id: "finance",     label: "Finance" }
+  ];
+  const articlesBox = el("div", { className: "articles" });
+  articlesBox.appendChild(el("p", { className: "loading", text: "Loading articles…" }));
+
+  const queries = topicQueries(country);
+  let activeTopic = "geopolitics";
+
+  function setActiveTab(topic) {
+    activeTopic = topic;
+    for (const btn of tabsBar.querySelectorAll(".tab")) {
+      btn.classList.toggle("active", btn.dataset.topic === topic);
+    }
+    clear(articlesBox);
+    articlesBox.appendChild(el("p", { className: "loading", text: "Loading articles…" }));
+    const cacheKey = `${country}::${topic}`;
+    fetchNews(queries[topic], cacheKey).then(arts => {
+      if (activeTopic === topic) renderArticles(articlesBox, arts);
+    });
+  }
+
+  for (const t of topics) {
+    const btn = el("button", { className: "tab" + (t.id === "geopolitics" ? " active" : ""), text: t.label });
+    btn.dataset.topic = t.id;
+    btn.addEventListener("click", () => setActiveTab(t.id));
+    tabsBar.appendChild(btn);
+  }
+  content.appendChild(tabsBar);
+  content.appendChild(articlesBox);
+
+  // Pre-warm all three topics in parallel so tab switches hit cache.
+  for (const t of topics) {
+    fetchNews(queries[t.id], `${country}::${t.id}`).catch(() => {});
+  }
+  setActiveTab("geopolitics");
+
+  // Async: FX + sparkline
+  if (data) {
+    fetchFX(data.currency).then(fx => {
+      const fxEl = document.getElementById("fx-value");
+      if (!fxEl) return;
+      if (fx && typeof fx.rate === "number") {
+        fxEl.textContent = fx.rate.toFixed(4);
+        const sub = fxEl.parentElement.querySelector(".metric-sub");
+        if (sub) sub.textContent = fx.date ? `As of ${fx.date}` : "Live";
+      } else {
+        fxEl.textContent = "unavailable";
+        fxEl.style.color = "var(--muted)";
+        const sub = fxEl.parentElement.querySelector(".metric-sub");
+        if (sub) sub.textContent = "Not on Frankfurter feed";
+      }
+    });
+
+    fetchFXSeries(data.currency, 90).then(series => {
+      const slot = document.getElementById("spark-slot");
+      if (!slot || !series) return;
+      const spark = renderSparkline(series);
+      if (spark) {
+        // Update header to include currency
+        const header = spark.querySelector(".spark-header span");
+        if (header) header.textContent = `USD / ${data.currency} · 90d`;
+        slot.appendChild(spark);
+      }
+    });
+  }
+}
+
+function buildTooltip(key, displayName) {
+  const data = key ? COUNTRY_DATA[key] : null;
+  const lines = [`<div class="tip-name">${flagEmoji(key)} ${displayName.replace(/[<>]/g, "")}</div>`];
+  if (data) {
+    const ytdStr = typeof data.ytd === "number"
+      ? `<span style="color:${data.ytd >= 0 ? '#3fb950' : '#f85149'}">${data.ytd >= 0 ? '+' : ''}${data.ytd.toFixed(2)}%</span>`
+      : "—";
+    lines.push(`<div class="tip-row">Policy rate <b>${fmt(data.rate, "%")}</b> · 10Y <b>${fmt(data.yield10y, "%")}</b></div>`);
+    lines.push(`<div class="tip-row">${data.index.name} YTD <b>${ytdStr}</b></div>`);
+    lines.push(`<div class="tip-hint">Click for full snapshot</div>`);
+  } else {
+    lines.push(`<div class="tip-row">Click for news (no macro data)</div>`);
+  }
+  return lines.join("");
+}
+
+function onEachFeature(feature, layer) {
+  const key = getCountryKey(feature);
+  const name = getCountryName(feature);
+  layer._hasData = !!key;
+  layer.bindTooltip(buildTooltip(key, name), {
+    className: "country-tip", sticky: true, direction: "top", opacity: 1
+  });
+  layer.on({
+    mouseover: (e) => { if (e.target !== selectedLayer) e.target.setStyle(hoverStyle()); },
+    mouseout:  (e) => { if (e.target !== selectedLayer) e.target.setStyle(restingStyle(e.target)); },
+    click: (e) => {
+      if (selectedLayer && selectedLayer !== e.target) selectedLayer.setStyle(restingStyle(selectedLayer));
+      selectedLayer = e.target;
+      e.target.setStyle(selectedStyle());
+      renderCountry(key, name);
+    }
+  });
+}
+
+renderEmpty();
+
+fetch("https://cdn.jsdelivr.net/gh/johan/world.geo.json/countries.geo.json")
+  .then(r => r.json())
+  .then(geo => {
+    L.geoJSON(geo, {
+      style: (f) => getCountryKey(f) ? supportedStyle() : unsupportedStyle(),
+      onEachFeature
+    }).addTo(map);
+  })
+  .catch(err => {
+    const content = document.getElementById("content");
+    clear(content);
+    content.appendChild(el("p", { className: "empty", text: "Failed to load map data: " + err.message }));
+  });
+</script>
+</body>
+</html>
