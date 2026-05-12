@@ -44,6 +44,13 @@
   .ytd-badge { font-size: 12px; font-weight: 600; }
   .ytd-up { color: var(--good); }
   .ytd-down { color: var(--bad); }
+  .commodity-card { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .commodity-left { display: flex; flex-direction: column; gap: 2px; }
+  .commodity-name { font-size: 14px; font-weight: 600; }
+  .commodity-sub { font-size: 11px; color: var(--muted); }
+  .commodity-right { text-align: right; display: flex; flex-direction: column; gap: 2px; }
+  .commodity-price { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .commodity-change { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .tabs { display: flex; gap: 4px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
   .tab { background: none; border: none; color: var(--muted); padding: 8px 12px; font-size: 13px; cursor: pointer; border-bottom: 2px solid transparent; font-family: inherit; }
   .tab:hover { color: var(--text); }
@@ -150,6 +157,7 @@ if (window.MACRO_OVERRIDE && window.MACRO_OVERRIDE.data) {
       if (typeof vals.rate === "number")     COUNTRY_DATA[iso].rate = vals.rate;
       if (typeof vals.yield10y === "number") COUNTRY_DATA[iso].yield10y = vals.yield10y;
       if (typeof vals.ytd === "number")      COUNTRY_DATA[iso].ytd = vals.ytd;
+      if (vals.commodity && typeof vals.commodity === "object") COUNTRY_DATA[iso].commodity = vals.commodity;
     }
   }
   const dateEl = document.getElementById("data-date");
@@ -434,6 +442,27 @@ async function renderCountry(key, displayName) {
     const sparkSlot = el("div", { id: "spark-slot" });
     content.appendChild(sparkSlot);
 
+    // Commodity
+    if (data.commodity && typeof data.commodity.price === "number") {
+      const c = data.commodity;
+      const up = (c.change_pct || 0) >= 0;
+      content.appendChild(el("h3", { text: "Key commodity" }));
+      content.appendChild(el("div", { className: "commodity-card" }, [
+        el("div", { className: "commodity-left" }, [
+          el("span", { className: "commodity-name", text: c.name }),
+          el("span", { className: "commodity-sub", text: c.ticker })
+        ]),
+        el("div", { className: "commodity-right" }, [
+          el("span", { className: "commodity-price", text: "$" + c.price.toFixed(2) }),
+          (() => {
+            const ch = el("span", { className: "commodity-change " + (up ? "ytd-up" : "ytd-down"),
+              text: (up ? "+" : "") + (c.change_pct || 0).toFixed(2) + "% today" });
+            return ch;
+          })()
+        ])
+      ]));
+    }
+
     // Sectors
     content.appendChild(el("h3", { text: "Key equity sectors" }));
     content.appendChild(el("div", { className: "sectors" },
@@ -538,6 +567,12 @@ function buildTooltip(key, displayName) {
       : "—";
     lines.push(`<div class="tip-row">Policy rate <b>${fmt(data.rate, "%")}</b> · 10Y <b>${fmt(data.yield10y, "%")}</b></div>`);
     lines.push(`<div class="tip-row">${data.index.name} YTD <b>${ytdStr}</b></div>`);
+    if (data.commodity && typeof data.commodity.price === "number") {
+      const cUp = (data.commodity.change_pct || 0) >= 0;
+      const cColor = cUp ? "#3fb950" : "#f85149";
+      const cSign = cUp ? "+" : "";
+      lines.push(`<div class="tip-row">${data.commodity.name} <b>$${data.commodity.price.toFixed(2)}</b> <span style="color:${cColor}">${cSign}${(data.commodity.change_pct || 0).toFixed(2)}%</span></div>`);
+    }
     lines.push(`<div class="tip-hint">Click for full snapshot</div>`);
   } else {
     lines.push(`<div class="tip-row">Click for news (no macro data)</div>`);

@@ -127,6 +127,77 @@ YAHOO_TICKERS = {
 }
 
 
+# ISO2 -> Yahoo commodity-futures ticker. Only assigned where a single commodity
+# is a meaningful driver of the country's external balance or stock market.
+COUNTRY_COMMODITY = {
+    "US": "CL=F", "CA": "CL=F", "MX": "CL=F",
+    "SA": "BZ=F", "AE": "BZ=F", "RU": "BZ=F", "NO": "BZ=F",
+    "NG": "BZ=F", "EG": "BZ=F", "GB": "BZ=F",
+    "BR": "ZS=F", "AR": "ZS=F",
+    "CL": "HG=F", "PE": "HG=F",
+    "ZA": "GC=F", "AU": "GC=F", "IN": "GC=F", "CH": "GC=F", "TR": "GC=F",
+    "CO": "KC=F", "VN": "KC=F",
+    "ID": "NG=F", "MY": "NG=F",
+}
+
+COMMODITY_NAMES = {
+    "CL=F": "WTI Crude",
+    "BZ=F": "Brent Crude",
+    "NG=F": "Natural Gas",
+    "GC=F": "Gold",
+    "HG=F": "Copper",
+    "ZS=F": "Soybeans",
+    "KC=F": "Coffee",
+}
+
+
+def fetch_commodity_quote(symbol: str, max_retries: int = 3):
+    """Return {price, change_pct} for a Yahoo ticker using the meta block, which
+    includes the current intraday price."""
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=5d&interval=1d"
+    for attempt in range(max_retries):
+        try:
+            r = requests.get(url, headers=YAHOO_HEADERS, timeout=15)
+            if r.status_code == 429:
+                time.sleep(2 ** attempt + 1)
+                continue
+            if r.status_code != 200:
+                return None
+            result = r.json().get("chart", {}).get("result")
+            if not result:
+                return None
+            meta = result[0].get("meta", {}) or {}
+            price = meta.get("regularMarketPrice")
+            prev = meta.get("chartPreviousClose")
+            if price is None or prev is None or prev == 0:
+                return None
+            return {
+                "price": round(float(price), 2),
+                "change_pct": round((float(price) / float(prev) - 1) * 100, 2),
+            }
+        except Exception:
+            return None
+    return None
+
+
+def scrape_commodity_prices():
+    """Fetch each unique commodity ticker once; map back to each country."""
+    unique = sorted(set(COUNTRY_COMMODITY.values()))
+    quotes = {}
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futures = {pool.submit(fetch_commodity_quote, sym): sym for sym in unique}
+        for fut in as_completed(futures):
+            sym = futures[fut]
+            q = fut.result()
+            if q is not None:
+                quotes[sym] = q
+    out = {}
+    for iso, sym in COUNTRY_COMMODITY.items():
+        if sym in quotes:
+            out[iso] = {"ticker": sym, "name": COMMODITY_NAMES.get(sym, sym), **quotes[sym]}
+    return out
+
+
 def fetch_ytd(symbol: str, max_retries: int = 3):
     """Return YTD percentage change for a Yahoo ticker, or None on failure."""
     now_utc = datetime.now(timezone.utc)
@@ -273,7 +344,15 @@ def main():
         print(f"  failed: {e}")
         ytd = {}
 
-    if not rates and not yields and not ytd:
+    print("Fetching commodity prices from Yahoo Finance...")
+    try:
+        commodities = scrape_commodity_prices()
+        print(f"  {len(commodities)} countries with commodity quotes")
+    except Exception as e:
+        print(f"  failed: {e}")
+        commodities = {}
+
+    if not rates and not yields and not ytd and not commodities:
         print("Nothing scraped; leaving data.js untouched.")
         sys.exit(1)
 
@@ -283,7 +362,7 @@ def main():
     existing = load_existing_data(here / "data.js")
 
     merged = {}
-    all_isos = set(existing) | set(rates) | set(yields) | set(ytd)
+    all_isos = set(existing) | set(rates) | set(yields) | set(ytd) | set(commodities)
     for iso in all_isos:
         entry = dict(existing.get(iso, {}))
         if iso in rates:
@@ -292,6 +371,8 @@ def main():
             entry["yield10y"] = round(yields[iso], 2)
         if iso in ytd:
             entry["ytd"] = ytd[iso]
+        if iso in commodities:
+            entry["commodity"] = commodities[iso]
         if entry:
             merged[iso] = entry
 
