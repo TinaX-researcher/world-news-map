@@ -245,15 +245,27 @@ async function fetchFXSeries(currency, days = 90) {
   } catch { return null; }
 }
 
+// GDELT enforces "one request per 5 seconds". Serialize all calls through this gate.
+let gdeltNextAllowed = 0;
+async function gdeltFetch(url) {
+  const wait = Math.max(0, gdeltNextAllowed - Date.now());
+  gdeltNextAllowed = Math.max(Date.now(), gdeltNextAllowed) + 5200;
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  return fetch(url);
+}
+
 function fetchNews(query, key) {
   if (cache.news[key]) return Promise.resolve(cache.news[key]);
   if (cache.newsInflight[key]) return cache.newsInflight[key];
   const promise = (async () => {
     try {
       const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(query)}&mode=ArtList&maxrecords=6&format=json&sort=hybridrel&timespan=7d`;
-      const r = await fetch(url);
+      const r = await gdeltFetch(url);
       if (!r.ok) return [];
-      const data = await r.json();
+      const text = await r.text();
+      // GDELT sometimes returns plain-text rate-limit / error messages with HTTP 200.
+      if (!text.trim().startsWith("{")) return [];
+      const data = JSON.parse(text);
       const arts = (data.articles || []).slice(0, 6);
       cache.news[key] = arts;
       return arts;
