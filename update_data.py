@@ -156,6 +156,21 @@ def fetch_ytd(symbol: str, max_retries: int = 3):
     return None
 
 
+def load_existing_data(path: Path) -> dict:
+    """Pull the data dict out of a previous data.js so we can preserve fields
+    that this run failed to scrape."""
+    if not path.exists():
+        return {}
+    try:
+        text = path.read_text(encoding="utf-8")
+        m = re.search(r"window\.MACRO_OVERRIDE\s*=\s*(\{.*\});", text, re.DOTALL)
+        if not m:
+            return {}
+        return json.loads(m.group(1)).get("data", {}) or {}
+    except Exception:
+        return {}
+
+
 def scrape_ytd_returns():
     """Fetch YTD returns for all known Yahoo tickers, throttled to avoid 429s."""
     out = {}
@@ -262,16 +277,23 @@ def main():
         print("Nothing scraped; leaving data.js untouched.")
         sys.exit(1)
 
+    # Preserve fields from the previous run that weren't scraped this time.
+    # Lets the workflow tolerate a single source failing (e.g. Yahoo rate-limiting)
+    # without wiping all YTD values.
+    existing = load_existing_data(here / "data.js")
+
     merged = {}
-    for iso in set(rates) | set(yields) | set(ytd):
-        entry = {}
+    all_isos = set(existing) | set(rates) | set(yields) | set(ytd)
+    for iso in all_isos:
+        entry = dict(existing.get(iso, {}))
         if iso in rates:
             entry["rate"] = round(rates[iso], 2)
         if iso in yields:
             entry["yield10y"] = round(yields[iso], 2)
         if iso in ytd:
             entry["ytd"] = ytd[iso]
-        merged[iso] = entry
+        if entry:
+            merged[iso] = entry
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     payload = {"updated": today, "data": merged}
