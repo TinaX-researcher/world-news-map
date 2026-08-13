@@ -2,104 +2,24 @@
 window.MACRO_OVERRIDE = {
   "updated": "2026-08-13",
   "data": {
-    "FI": {
-      "rate": 2.4,
-      "yield10y": 3.46,
-      "ytd": 10.94
-    },
-    "NG": {
-      "rate": 26.5,
+    "CA": {
+      "rate": 2.25,
+      "yield10y": 3.64,
+      "ytd": 14.69,
       "commodity": {
-        "ticker": "BZ=F",
-        "name": "Brent Crude",
-        "price": 86.66,
-        "change_pct": -1.21
+        "ticker": "CL=F",
+        "name": "WTI Crude",
+        "price": 82.37,
+        "change_pct": 0.29
       }
     },
-    "NO": {
-      "rate": 4.25,
-      "yield10y": 4.35,
+    "VN": {
+      "rate": 4.5,
       "commodity": {
-        "ticker": "BZ=F",
-        "name": "Brent Crude",
-        "price": 86.66,
-        "change_pct": -1.21
-      }
-    },
-    "CZ": {
-      "rate": 3.5
-    },
-    "PH": {
-      "rate": 4.75,
-      "ytd": 2.5
-    },
-    "BE": {
-      "rate": 2.4,
-      "yield10y": 3.67,
-      "ytd": 11.89
-    },
-    "IL": {
-      "rate": 3.5,
-      "ytd": 14.1
-    },
-    "CH": {
-      "rate": 0.0,
-      "yield10y": 0.36,
-      "ytd": 9.42,
-      "commodity": {
-        "ticker": "GC=F",
-        "name": "Gold",
-        "price": 4439.4,
-        "change_pct": 1.78
-      }
-    },
-    "RU": {
-      "rate": 14.0,
-      "commodity": {
-        "ticker": "BZ=F",
-        "name": "Brent Crude",
-        "price": 86.66,
-        "change_pct": -1.21
-      }
-    },
-    "GR": {
-      "rate": 2.4,
-      "yield10y": 3.79,
-      "ytd": 21.09
-    },
-    "HK": {
-      "rate": 4.0,
-      "ytd": -3.58
-    },
-    "SG": {
-      "ytd": 22.85
-    },
-    "IE": {
-      "rate": 2.4,
-      "yield10y": 3.28,
-      "ytd": 10.01
-    },
-    "TW": {
-      "rate": 2.0,
-      "ytd": 56.8
-    },
-    "BR": {
-      "rate": 14.0,
-      "ytd": 4.25,
-      "commodity": {
-        "ticker": "ZS=F",
-        "name": "Soybeans",
-        "price": 1182.25,
-        "change_pct": 2.12
-      }
-    },
-    "EG": {
-      "rate": 19.0,
-      "commodity": {
-        "ticker": "BZ=F",
-        "name": "Brent Crude",
-        "price": 86.66,
-        "change_pct": -1.21
+        "ticker": "KC=F",
+        "name": "Coffee",
+        "price": 313.15,
+        "change_pct": -5.76
       }
     },
     "MY": {
@@ -108,9 +28,62 @@ window.MACRO_OVERRIDE = {
       "commodity": {
         "ticker": "NG=F",
         "name": "Natural Gas",
-        "price": 2.74,
-        "change_pct": -1.86
+        "price": 2.75,
+        "change_pct": -1.57
       }
+    },
+    "JP": {
+      "rate": 1.0,
+      "yield10y": 2.87,
+      "ytd": 30.27
+    },
+    "TW": {
+      "rate": 2.0,
+      "ytd": 56.8
+    },
+    "FI": {
+      "rate": 2.4,
+      "yield10y": 3.46,
+      "ytd": 10.63
+    },
+    "PH": {
+      "rate": 4.75,
+      "ytd": 2.5
+    },
+    "ES": {
+      "rate": 2.4,
+      "yield10y": 3.57,
+      "ytd": 15.3
+    },
+    "FR": {
+      "rate": 2.4,
+      "yield10y": 3.94,
+      "ytd": 5.56
+    },
+    "AR": {
+      "rate": 29.0,
+      "ytd": -4.36,
+      "commodity": {
+        "ticker": "ZS=F",
+        "name": "Soybeans",
+        "price": 1183.75,
+        "change_pct": 2.25
+      }
+    },
+    "PL": {
+      "rate": 3.75
+    },
+    "RU": {
+      "rate": 14.0,
+      "commodity": {
+        "ticker": "BZ=F",
+        "name": "Brent Crude",
+        "price": 88.08,
+        "change_pct": 0.41
+      }
+    },
+    "CZ": {
+      "rate": 3.5
     },
     "ID": {
       "rate": 5.75,
@@ -118,69 +91,14 @@ window.MACRO_OVERRIDE = {
       "commodity": {
         "ticker": "NG=F",
         "name": "Natural Gas",
-        "price": 2.74,
-        "change_pct": -1.86
+        "price": 2.75,
+        "change_pct": -1.57
       }
     },
-    "HU": {
-      "rate": 5.75
-    },
-    "SE": {
-      "rate": 1.75,
-      "yield10y": 2.99,
-      "ytd": 13.95
-    },
-    "PL": {
-      "rate": 3.75
-    },
-    "US": {
-      "rate": 3.75,
-      "yield10y": 4.63,
-      "ytd": 13.71,
-      "commodity": {
-        "ticker": "CL=F",
-        "name": "WTI Crude",
-        "price": 80.98,
-        "change_pct": -1.4
-      }
-    },
-    "PT": {
+    "IE": {
       "rate": 2.4,
-      "yield10y": 3.47,
-      "ytd": 10.48
-    },
-    "SA": {
-      "rate": 4.25,
-      "ytd": 2.6,
-      "commodity": {
-        "ticker": "BZ=F",
-        "name": "Brent Crude",
-        "price": 86.66,
-        "change_pct": -1.21
-      }
-    },
-    "DK": {
-      "rate": 1.85,
-      "yield10y": 2.95,
-      "ytd": 3.43
-    },
-    "VN": {
-      "rate": 4.5,
-      "commodity": {
-        "ticker": "KC=F",
-        "name": "Coffee",
-        "price": 316.7,
-        "change_pct": -4.69
-      }
-    },
-    "CL": {
-      "rate": 4.5,
-      "commodity": {
-        "ticker": "HG=F",
-        "name": "Copper",
-        "price": 6.62,
-        "change_pct": 0.43
-      }
+      "yield10y": 3.28,
+      "ytd": 9.43
     },
     "AU": {
       "rate": 4.35,
@@ -189,108 +107,66 @@ window.MACRO_OVERRIDE = {
       "commodity": {
         "ticker": "GC=F",
         "name": "Gold",
-        "price": 4439.4,
-        "change_pct": 1.78
+        "price": 4426.8,
+        "change_pct": 1.49
       }
+    },
+    "TR": {
+      "rate": 37.0,
+      "ytd": 22.91,
+      "commodity": {
+        "ticker": "GC=F",
+        "name": "Gold",
+        "price": 4426.8,
+        "change_pct": 1.49
+      }
+    },
+    "DK": {
+      "rate": 1.85,
+      "yield10y": 2.95,
+      "ytd": 3.44
     },
     "TH": {
       "rate": 1.0,
       "ytd": 26.12
     },
-    "FR": {
-      "rate": 2.4,
-      "yield10y": 3.94,
-      "ytd": 5.77
+    "MX": {
+      "rate": 6.5,
+      "yield10y": 9.16,
+      "ytd": 1.45,
+      "commodity": {
+        "ticker": "CL=F",
+        "name": "WTI Crude",
+        "price": 82.37,
+        "change_pct": 0.29
+      }
+    },
+    "ZA": {
+      "rate": 7.0,
+      "commodity": {
+        "ticker": "GC=F",
+        "name": "Gold",
+        "price": 4426.8,
+        "change_pct": 1.49
+      }
+    },
+    "NG": {
+      "rate": 26.5,
+      "commodity": {
+        "ticker": "BZ=F",
+        "name": "Brent Crude",
+        "price": 88.08,
+        "change_pct": 0.41
+      }
     },
     "PE": {
       "rate": 4.25,
       "commodity": {
         "ticker": "HG=F",
         "name": "Copper",
-        "price": 6.62,
-        "change_pct": 0.43
+        "price": 6.63,
+        "change_pct": 0.47
       }
-    },
-    "CO": {
-      "rate": 12.0,
-      "commodity": {
-        "ticker": "KC=F",
-        "name": "Coffee",
-        "price": 316.7,
-        "change_pct": -4.69
-      }
-    },
-    "DE": {
-      "rate": 2.4,
-      "yield10y": 3.13,
-      "ytd": 7.49
-    },
-    "BD": {
-      "rate": 9.5
-    },
-    "NL": {
-      "rate": 2.4,
-      "yield10y": 3.22,
-      "ytd": 15.8
-    },
-    "AT": {
-      "rate": 2.4,
-      "yield10y": 3.34,
-      "ytd": 25.47
-    },
-    "AE": {
-      "rate": 3.65,
-      "commodity": {
-        "ticker": "BZ=F",
-        "name": "Brent Crude",
-        "price": 86.66,
-        "change_pct": -1.21
-      }
-    },
-    "NZ": {
-      "rate": 2.5,
-      "yield10y": 4.68,
-      "ytd": 1.88
-    },
-    "UA": {
-      "rate": 15.5
-    },
-    "RO": {
-      "rate": 6.5
-    },
-    "CA": {
-      "rate": 2.25,
-      "yield10y": 3.64,
-      "ytd": 15.03,
-      "commodity": {
-        "ticker": "CL=F",
-        "name": "WTI Crude",
-        "price": 80.98,
-        "change_pct": -1.4
-      }
-    },
-    "GB": {
-      "rate": 3.75,
-      "yield10y": 4.95,
-      "ytd": 8.39,
-      "commodity": {
-        "ticker": "BZ=F",
-        "name": "Brent Crude",
-        "price": 86.66,
-        "change_pct": -1.21
-      }
-    },
-    "PK": {
-      "rate": 11.5
-    },
-    "KR": {
-      "rate": 2.75,
-      "ytd": 58.1
-    },
-    "IT": {
-      "rate": 2.4,
-      "yield10y": 3.91,
-      "ytd": 18.68
     },
     "IN": {
       "rate": 5.25,
@@ -299,66 +175,190 @@ window.MACRO_OVERRIDE = {
       "commodity": {
         "ticker": "GC=F",
         "name": "Gold",
-        "price": 4439.4,
-        "change_pct": 1.78
+        "price": 4426.8,
+        "change_pct": 1.49
       }
     },
-    "TR": {
-      "rate": 37.0,
-      "ytd": 22.9,
+    "BR": {
+      "rate": 14.0,
+      "ytd": 3.86,
       "commodity": {
-        "ticker": "GC=F",
-        "name": "Gold",
-        "price": 4439.4,
-        "change_pct": 1.78
+        "ticker": "ZS=F",
+        "name": "Soybeans",
+        "price": 1183.75,
+        "change_pct": 2.25
       }
     },
-    "MX": {
-      "rate": 6.5,
-      "yield10y": 9.16,
-      "ytd": 1.93,
-      "commodity": {
-        "ticker": "CL=F",
-        "name": "WTI Crude",
-        "price": 80.98,
-        "change_pct": -1.4
-      }
-    },
-    "ES": {
+    "DE": {
       "rate": 2.4,
-      "yield10y": 3.57,
-      "ytd": 15.89
+      "yield10y": 3.13,
+      "ytd": 7.17
+    },
+    "IL": {
+      "rate": 3.5,
+      "ytd": 14.1
+    },
+    "IT": {
+      "rate": 2.4,
+      "yield10y": 3.91,
+      "ytd": 18.33
+    },
+    "PK": {
+      "rate": 11.5
+    },
+    "AT": {
+      "rate": 2.4,
+      "yield10y": 3.34,
+      "ytd": 25.72
+    },
+    "UA": {
+      "rate": 15.5
     },
     "KE": {
       "rate": 8.75
     },
-    "AR": {
-      "rate": 29.0,
-      "ytd": -3.17,
+    "SE": {
+      "rate": 1.75,
+      "yield10y": 2.99,
+      "ytd": 13.89
+    },
+    "SG": {
+      "ytd": 22.85
+    },
+    "HK": {
+      "rate": 4.0,
+      "ytd": -3.58
+    },
+    "BE": {
+      "rate": 2.4,
+      "yield10y": 3.67,
+      "ytd": 11.66
+    },
+    "PT": {
+      "rate": 2.4,
+      "yield10y": 3.47,
+      "ytd": 10.17
+    },
+    "GB": {
+      "rate": 3.75,
+      "yield10y": 4.95,
+      "ytd": 8.26,
       "commodity": {
-        "ticker": "ZS=F",
-        "name": "Soybeans",
-        "price": 1182.25,
-        "change_pct": 2.12
+        "ticker": "BZ=F",
+        "name": "Brent Crude",
+        "price": 88.08,
+        "change_pct": 0.41
       }
+    },
+    "NO": {
+      "rate": 4.25,
+      "yield10y": 4.35,
+      "commodity": {
+        "ticker": "BZ=F",
+        "name": "Brent Crude",
+        "price": 88.08,
+        "change_pct": 0.41
+      }
+    },
+    "NZ": {
+      "rate": 2.5,
+      "yield10y": 4.68,
+      "ytd": 1.88
+    },
+    "BD": {
+      "rate": 9.5
+    },
+    "CH": {
+      "rate": 0.0,
+      "yield10y": 0.36,
+      "ytd": 9.27,
+      "commodity": {
+        "ticker": "GC=F",
+        "name": "Gold",
+        "price": 4426.8,
+        "change_pct": 1.49
+      }
+    },
+    "KR": {
+      "rate": 2.75,
+      "ytd": 52.66
+    },
+    "EG": {
+      "rate": 19.0,
+      "commodity": {
+        "ticker": "BZ=F",
+        "name": "Brent Crude",
+        "price": 88.08,
+        "change_pct": 0.41
+      }
+    },
+    "AE": {
+      "rate": 3.65,
+      "commodity": {
+        "ticker": "BZ=F",
+        "name": "Brent Crude",
+        "price": 88.08,
+        "change_pct": 0.41
+      }
+    },
+    "HU": {
+      "rate": 5.75
     },
     "CN": {
       "rate": 3.0,
       "ytd": -1.14
     },
-    "ZA": {
-      "rate": 7.0,
+    "CO": {
+      "rate": 12.0,
       "commodity": {
-        "ticker": "GC=F",
-        "name": "Gold",
-        "price": 4439.4,
-        "change_pct": 1.78
+        "ticker": "KC=F",
+        "name": "Coffee",
+        "price": 313.15,
+        "change_pct": -5.76
       }
     },
-    "JP": {
-      "rate": 1.0,
-      "yield10y": 2.87,
-      "ytd": 31.79
+    "CL": {
+      "rate": 4.5,
+      "commodity": {
+        "ticker": "HG=F",
+        "name": "Copper",
+        "price": 6.63,
+        "change_pct": 0.47
+      }
+    },
+    "US": {
+      "rate": 3.75,
+      "yield10y": 4.63,
+      "ytd": 13.42,
+      "commodity": {
+        "ticker": "CL=F",
+        "name": "WTI Crude",
+        "price": 82.37,
+        "change_pct": 0.29
+      }
+    },
+    "GR": {
+      "rate": 2.4,
+      "yield10y": 3.79,
+      "ytd": 21.09
+    },
+    "SA": {
+      "rate": 4.25,
+      "ytd": 2.6,
+      "commodity": {
+        "ticker": "BZ=F",
+        "name": "Brent Crude",
+        "price": 88.08,
+        "change_pct": 0.41
+      }
+    },
+    "RO": {
+      "rate": 6.5
+    },
+    "NL": {
+      "rate": 2.4,
+      "yield10y": 3.22,
+      "ytd": 15.71
     }
   }
 };
